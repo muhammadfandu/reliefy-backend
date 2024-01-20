@@ -1,15 +1,18 @@
-const { password } = require('pg/lib/defaults');
 const db = require("../models");
 const User = db.users;
 const Op = db.Sequelize.Op;
+const authToken = require('../utilities/accessToken.js')
 
 exports.login = async (req, res) => {
     User.findOne({ where: { email: req.body.email, password: req.body.password } })
       .then(data => {
         if (data) {
+          const token = authToken.generateAccessToken(req.body.email);
+
             const response = {
                 status: 200,
                 data: data,
+                accessToken: token,
                 message: 'Login success'
             }
           res.status(200).send(response);
@@ -20,8 +23,9 @@ exports.login = async (req, res) => {
         }
       })
       .catch(err => {
+        console.error(err);
         res.status(500).send({
-          message: "Error retrieving User with id=" + id
+          message: "Error retrieving User with email = " + req.body.email
         });
       });
 }
@@ -31,7 +35,7 @@ exports.create = async (req, res) => {
   // Validate request
   if (!req.body.name) {
     res.status(400).send({
-      message: "Content can not be empty!"
+      message: "Name can not be empty!"
     });
     return;
   }
